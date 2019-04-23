@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Windows.Data;
@@ -15,6 +16,8 @@ namespace Watcher
 {
     public class MainViewModel : INotifyPropertyChanged
     {
+        public string Version => Assembly.GetEntryAssembly().GetName().Version.ToString();
+
         public ObservableCollection<Change> Changes { get; set; } = new ObservableCollection<Change>();
 
         public ObservableCollection<ChangeWatcher> Watchers { get; set; } = new ObservableCollection<ChangeWatcher>();
@@ -29,14 +32,27 @@ namespace Watcher
             _addWatcherCommand ??
             (_addWatcherCommand = new RelayCommand(obj => { AddWatcher(); }));
 
+        private RelayCommand _closingCommand;
+
+        public RelayCommand ClosingCommand =>
+            _closingCommand ??
+            (_closingCommand = new RelayCommand(obj =>
+            {
+                if (_savingTimer.Enabled)
+                {
+                    _savingTimer.Enabled = false;
+                    SaveSettings();
+                }
+            }));
+
         object _lockChanges = new object();
-        
+
         private Timer _savingTimer = new Timer(5_000)
         {
             AutoReset = false,
             Enabled = false,
         };
-        
+
         public MainViewModel()
         {
             //avoid a "object reference not set to an instance of an object@ exception in XAML code while design time
@@ -48,21 +64,18 @@ namespace Watcher
 
             BindingOperations.EnableCollectionSynchronization(Changes, _lockChanges);
 
-            _savingTimer.Elapsed += (s, e) =>
-            {
-                SaveSettings();
-            };
+            _savingTimer.Elapsed += (s, e) => { SaveSettings(); };
 
             LoadSettings();
         }
 
-        public void AddWatcher(ChangeWatcher watcher, bool updateLastChangeDateTime = true)
+        public void AddWatcher(ChangeWatcher watcher)
         {
-            AddWatcher(watcher.Path, watcher.Filter, watcher.IncludeSubdirectories, watcher.EnableRaisingEvents, updateLastChangeDateTime);
+            AddWatcher(watcher.Path, watcher.Filter, watcher.IncludeSubdirectories, watcher.EnableRaisingEvents);
         }
 
         public void AddWatcher(string path = "", string filter = "", bool includeSubdirectories = true,
-            bool enableRaisingEvents = false, bool updateLastChangeDateTime = true)
+            bool enableRaisingEvents = false)
         {
             var watcher = new ChangeWatcher(path, filter);
 
@@ -121,14 +134,15 @@ namespace Watcher
 
                 foreach (var watcher in settings.Watchers)
                 {
-                    AddWatcher(watcher, false);
+                    AddWatcher(watcher);
                 }
             }
             else
             {
                 // first run
-                AddWatcher(@"C:\", enableRaisingEvents: true, updateLastChangeDateTime: false);
+                AddWatcher(@"C:\", enableRaisingEvents: true);
             }
+
             Console.WriteLine("Settings loaded");
         }
 
