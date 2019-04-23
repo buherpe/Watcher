@@ -1,12 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Windows.Data;
 using System.Windows.Input;
 using Newtonsoft.Json;
+using Timer = System.Timers.Timer;
 
 namespace Watcher
 {
@@ -27,54 +30,39 @@ namespace Watcher
             (_addWatcherCommand = new RelayCommand(obj => { AddWatcher(); }));
 
         object _lockChanges = new object();
-
+        
+        private Timer _savingTimer = new Timer(5_000)
+        {
+            AutoReset = false,
+            Enabled = false,
+        };
+        
         public MainViewModel()
         {
-            BindingOperations.EnableCollectionSynchronization(Changes, _lockChanges);
-
             //avoid a "object reference not set to an instance of an object@ exception in XAML code while design time
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime)
             {
-                AddWatcher(@"C:\");
-
+                //AddWatcher(@"C:\");
                 return;
             }
 
-            var q = @"[
-  {
-    ""Path"": ""C:\\"",
-    ""Filter"": """",
-    ""IncludeSubdirectories"": true,
-    ""EnableRaisingEvents"": true
-  },
-  {
-    ""Path"": ""G:\\"",
-    ""Filter"": """",
-    ""IncludeSubdirectories"": true,
-    ""EnableRaisingEvents"": false
-  },
-]";
+            BindingOperations.EnableCollectionSynchronization(Changes, _lockChanges);
 
-            var watchers = JsonConvert.DeserializeObject<ObservableCollection<ChangeWatcher>>(q);
-
-            foreach (var watcher in watchers)
+            _savingTimer.Elapsed += (s, e) =>
             {
-                AddWatcher(watcher);
-            }
+                SaveSettings();
+            };
 
-            //AddWatcher(@"C:\", enableRaisingEvents: true);
-
-            //var o = JsonConvert.SerializeObject(Watchers, Formatting.Indented);
-            //Console.WriteLine(o);
+            LoadSettings();
         }
 
-        public void AddWatcher(ChangeWatcher watcher)
+        public void AddWatcher(ChangeWatcher watcher, bool updateLastChangeDateTime = true)
         {
-            AddWatcher(watcher.Path, watcher.Filter, watcher.IncludeSubdirectories, watcher.EnableRaisingEvents);
+            AddWatcher(watcher.Path, watcher.Filter, watcher.IncludeSubdirectories, watcher.EnableRaisingEvents, updateLastChangeDateTime);
         }
 
         public void AddWatcher(string path = "", string filter = "", bool includeSubdirectories = true,
-            bool enableRaisingEvents = false)
+            bool enableRaisingEvents = false, bool updateLastChangeDateTime = true)
         {
             var watcher = new ChangeWatcher(path, filter);
 
@@ -87,6 +75,13 @@ namespace Watcher
             watcher.Id = _watchersCounter++;
             watcher.IncludeSubdirectories = includeSubdirectories;
             watcher.EnableRaisingEvents = enableRaisingEvents;
+
+            watcher.PropertyChanged += (s, e) =>
+            {
+                Console.WriteLine("_savingTimer stop start");
+                _savingTimer.Stop();
+                _savingTimer.Start();
+            };
 
             Watchers.Add(watcher);
         }
@@ -102,6 +97,39 @@ namespace Watcher
                 FullPath = fullPath,
                 OldFullPath = oldFullPath
             });
+        }
+
+        public void SaveSettings()
+        {
+            Console.WriteLine("Settings saving...");
+            var settings = new Settings();
+            settings.Watchers = new List<ChangeWatcher>(Watchers);
+
+            var settingsJson = JsonConvert.SerializeObject(settings, Formatting.Indented);
+
+            File.WriteAllText("Watcher.json", settingsJson);
+            Console.WriteLine("Settings saved");
+        }
+
+        public void LoadSettings()
+        {
+            Console.WriteLine("Settings loading...");
+            if (File.Exists("Watcher.json"))
+            {
+                var settingsJson = File.ReadAllText("Watcher.json");
+                var settings = JsonConvert.DeserializeObject<Settings>(settingsJson);
+
+                foreach (var watcher in settings.Watchers)
+                {
+                    AddWatcher(watcher, false);
+                }
+            }
+            else
+            {
+                // first run
+                AddWatcher(@"C:\", enableRaisingEvents: true, updateLastChangeDateTime: false);
+            }
+            Console.WriteLine("Settings loaded");
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
