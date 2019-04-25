@@ -84,16 +84,18 @@ namespace Watcher
             watcher.Renamed += (watcherId, e) => AddChange(watcherId, ChangeType.Renamed, e.FullPath, e.OldFullPath);
             watcher.Deleted += (watcherId, e) => AddChange(watcherId, ChangeType.Deleted, e.FullPath);
             watcher.Error += (watcherId, e) => AddChange(watcherId, ChangeType.Error, e.GetException().Message);
-            watcher.OnWatcherDeleted += watcherId => Watchers.Remove(Watchers.FirstOrDefault(x => x.Id == watcherId));
+            watcher.OnWatcherDeleted += watcherId =>
+            {
+                Watchers.Remove(Watchers.FirstOrDefault(x => x.Id == watcherId));
+                RestartSavingTimer();
+            };
             watcher.Id = _watchersCounter++;
             watcher.IncludeSubdirectories = includeSubdirectories;
             watcher.EnableRaisingEvents = enableRaisingEvents;
 
             watcher.PropertyChanged += (s, e) =>
             {
-                Console.WriteLine("_savingTimer stop start");
-                _savingTimer.Stop();
-                _savingTimer.Start();
+                RestartSavingTimer();
             };
 
             Watchers.Add(watcher);
@@ -110,6 +112,13 @@ namespace Watcher
                 FullPath = fullPath,
                 OldFullPath = oldFullPath
             });
+        }
+
+        public void RestartSavingTimer()
+        {
+            Console.WriteLine("Restart saving timer");
+            _savingTimer.Stop();
+            _savingTimer.Start();
         }
 
         public void SaveSettings()
