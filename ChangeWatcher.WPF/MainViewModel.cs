@@ -45,6 +45,12 @@ namespace Watcher
                 }
             }));
 
+        private RelayCommand _sortingCommand;
+
+        public RelayCommand SortingCommand =>
+            _sortingCommand ??
+            (_sortingCommand = new RelayCommand(obj => RestartSavingTimer()));
+
         object _lockChanges = new object();
 
         private Timer _savingTimer = new Timer(5_000)
@@ -56,11 +62,7 @@ namespace Watcher
         public MainViewModel()
         {
             //avoid a "object reference not set to an instance of an object@ exception in XAML code while design time
-            if (LicenseManager.UsageMode == LicenseUsageMode.Designtime)
-            {
-                //AddWatcher(@"C:\");
-                return;
-            }
+            if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
 
             BindingOperations.EnableCollectionSynchronization(Changes, _lockChanges);
 
@@ -93,10 +95,7 @@ namespace Watcher
             watcher.IncludeSubdirectories = includeSubdirectories;
             watcher.EnableRaisingEvents = enableRaisingEvents;
 
-            watcher.PropertyChanged += (s, e) =>
-            {
-                RestartSavingTimer();
-            };
+            watcher.PropertyChanged += (s, e) => { RestartSavingTimer(); };
 
             Watchers.Add(watcher);
         }
@@ -125,7 +124,9 @@ namespace Watcher
         {
             Console.WriteLine("Settings saving...");
             var settings = new Settings();
+
             settings.Watchers = new List<ChangeWatcher>(Watchers);
+            settings.SortingChanges = CollectionViewSource.GetDefaultView(Changes).SortDescriptions;
 
             var settingsJson = JsonConvert.SerializeObject(settings, Formatting.Indented);
 
@@ -141,15 +142,23 @@ namespace Watcher
                 var settingsJson = File.ReadAllText("Watcher.json");
                 var settings = JsonConvert.DeserializeObject<Settings>(settingsJson);
 
-                foreach (var watcher in settings.Watchers)
-                {
-                    AddWatcher(watcher);
-                }
+                if (settings.Watchers?.Any() ?? false)
+                    foreach (var watcher in settings.Watchers)
+                    {
+                        AddWatcher(watcher);
+                    }
+
+                if (settings.SortingChanges?.Any() ?? false)
+                    foreach (var settingsSortingChange in settings.SortingChanges)
+                    {
+                        CollectionViewSource.GetDefaultView(Changes).SortDescriptions.Add(settingsSortingChange);
+                    }
             }
             else
             {
                 // first run
                 AddWatcher(@"C:\", enableRaisingEvents: true);
+                CollectionViewSource.GetDefaultView(Changes).SortDescriptions.Add(new SortDescription("Id", ListSortDirection.Descending));
             }
 
             Console.WriteLine("Settings loaded");

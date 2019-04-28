@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:watcher="clr-namespace:Watcher"
         xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
+        xmlns:componentModel="clr-namespace:System.ComponentModel;assembly=WindowsBase"
         mc:Ignorable="d"
         Title="{Binding Version, StringFormat='Watcher v{0}'}"
         Height="450" Width="800">
@@ -16,7 +17,15 @@
     <Window.DataContext>
         <watcher:MainViewModel/>
     </Window.DataContext>
+    <Window.Resources>
+        <!--<CollectionViewSource Source="{Binding Changes}" x:Key="GridItems">
+            <CollectionViewSource.SortDescriptions>
+                <componentModel:SortDescription PropertyName="Id" Direction="Descending"/>
+            </CollectionViewSource.SortDescriptions>
+        </CollectionViewSource>-->
+    </Window.Resources>
     <Grid>
+        <Button Command="{Binding AddWatcherCommand}" Content="Add watcher" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="84"/>
         <ScrollViewer Margin="0,35,0,0" Height="114" VerticalAlignment="Top" VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding Watchers}">
                 <ItemsControl.ItemsPanel>
@@ -80,9 +89,13 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
-        <Button Command="{Binding AddWatcherCommand}" Content="Add watcher" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="84"/>
 
         <DataGrid ItemsSource="{Binding Changes}" Margin="0,149,0,0" AutoGenerateColumns="False" IsReadOnly="True">
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="Sorting">
+                    <i:InvokeCommandAction Command="{Binding SortingCommand}"/>
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
             <DataGrid.Resources>
                 <DataTemplate x:Key="ChangeTypeTemplate" DataType="watcher:Change">
                     <TextBlock Text="{Binding ChangeType}" >
