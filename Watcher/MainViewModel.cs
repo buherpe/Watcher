@@ -30,7 +30,7 @@ namespace Watcher
 
         public RelayCommand AddWatcherCommand =>
             _addWatcherCommand ??
-            (_addWatcherCommand = new RelayCommand(obj => { AddWatcher(); }));
+            (_addWatcherCommand = new RelayCommand(obj => AddWatcher()));
 
         private RelayCommand _closingCommand;
 
@@ -158,7 +158,8 @@ namespace Watcher
             {
                 // first run
                 AddWatcher(@"C:\", enableRaisingEvents: true);
-                CollectionViewSource.GetDefaultView(Changes).SortDescriptions.Add(new SortDescription("Id", ListSortDirection.Descending));
+                CollectionViewSource.GetDefaultView(Changes).SortDescriptions
+                    .Add(new SortDescription("Id", ListSortDirection.Descending));
             }
 
             Console.WriteLine("Settings loaded");
