@@ -18,7 +18,7 @@ namespace Watcher
     {
         public string Version => Assembly.GetEntryAssembly().GetName().Version.ToString();
 
-        public ObservableCollection<Change> Changes { get; set; } = new ObservableCollection<Change>();
+        public ObservableCollection<Change> Changes { get; } = new ObservableCollection<Change>();
 
         public ObservableCollection<ChangeWatcher> Watchers { get; set; } = new ObservableCollection<ChangeWatcher>();
 
@@ -64,7 +64,14 @@ namespace Watcher
             //avoid a "object reference not set to an instance of an object@ exception in XAML code while design time
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
 
-            BindingOperations.EnableCollectionSynchronization(Changes, _lockChanges);
+            BindingOperations.CollectionRegistering += (s, e) =>
+            {
+                if (Equals(e.Collection, Changes))
+                {
+                    Console.WriteLine("CollectionRegistering Event: EnableCollectionSynchronization for Changes");
+                    BindingOperations.EnableCollectionSynchronization(Changes, _lockChanges);
+                }
+            };
 
             _savingTimer.Elapsed += (s, e) => { SaveSettings(); };
 
@@ -102,15 +109,18 @@ namespace Watcher
 
         public void AddChange(int watcherId, ChangeType changeType, string fullPath, string oldFullPath = "")
         {
-            Changes.Add(new Change
+            lock (_lockChanges)
             {
-                Id = _changesCounter++,
-                DateTime = DateTime.Now,
-                WatcherId = watcherId,
-                ChangeType = changeType,
-                FullPath = fullPath,
-                OldFullPath = oldFullPath
-            });
+                Changes.Add(new Change
+                {
+                    Id = _changesCounter++,
+                    DateTime = DateTime.Now,
+                    WatcherId = watcherId,
+                    ChangeType = changeType,
+                    FullPath = fullPath,
+                    OldFullPath = oldFullPath
+                });
+            }
         }
 
         public void RestartSavingTimer()
