@@ -1,8 +1,6 @@
-﻿using System.Windows;
-
-namespace Watcher
+﻿namespace Watcher
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         public MainWindow()
         {

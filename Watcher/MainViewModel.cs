@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading;
+using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using Newtonsoft.Json;
@@ -20,7 +20,9 @@ namespace Watcher
 
         public ObservableCollection<Change> Changes { get; } = new ObservableCollection<Change>();
 
-        public ObservableCollection<ChangeWatcher> Watchers { get; set; } = new ObservableCollection<ChangeWatcher>();
+        //public ObservableCollection<DataGridColumn> Columns { get; } = new ObservableCollection<DataGridColumn>();
+
+        public ObservableCollection<ChangeWatcher> Watchers { get; } = new ObservableCollection<ChangeWatcher>();
 
         private int _changesCounter;
 
@@ -51,7 +53,9 @@ namespace Watcher
             _sortingCommand ??
             (_sortingCommand = new RelayCommand(obj => RestartSavingTimer()));
 
-        object _lockChanges = new object();
+        private object _lockChanges = new object();
+
+        //private object _lockColumns = new object();
 
         private Timer _savingTimer = new Timer(5_000)
         {
@@ -71,6 +75,11 @@ namespace Watcher
                     Console.WriteLine("CollectionRegistering Event: EnableCollectionSynchronization for Changes");
                     BindingOperations.EnableCollectionSynchronization(Changes, _lockChanges);
                 }
+                //else if (Equals(e.Collection, Columns))
+                //{
+                //    Console.WriteLine("CollectionRegistering Event: EnableCollectionSynchronization for Columns");
+                //    BindingOperations.EnableCollectionSynchronization(Columns, _lockColumns);
+                //}
             };
 
             _savingTimer.Elapsed += (s, e) => { SaveSettings(); };
@@ -136,7 +145,7 @@ namespace Watcher
             var settings = new Settings();
 
             settings.Watchers = new List<ChangeWatcher>(Watchers);
-            settings.SortingChanges = CollectionViewSource.GetDefaultView(Changes).SortDescriptions;
+            //settings.SortingChanges = CollectionViewSource.GetDefaultView(Changes).SortDescriptions;
 
             var settingsJson = JsonConvert.SerializeObject(settings, Formatting.Indented);
 
@@ -158,11 +167,11 @@ namespace Watcher
                         AddWatcher(watcher);
                     }
 
-                if (settings.SortingChanges?.Any() ?? false)
-                    foreach (var settingsSortingChange in settings.SortingChanges)
-                    {
-                        CollectionViewSource.GetDefaultView(Changes).SortDescriptions.Add(settingsSortingChange);
-                    }
+                //if (settings.SortingChanges?.Any() ?? false)
+                //    foreach (var settingsSortingChange in settings.SortingChanges)
+                //    {
+                //        CollectionViewSource.GetDefaultView(Changes).SortDescriptions.Add(settingsSortingChange);
+                //    }
             }
             else
             {
