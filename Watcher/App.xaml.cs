@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Windows;
 using NLog;
+using Squirrel;
 using Tools;
 
 namespace Watcher
@@ -27,6 +29,26 @@ namespace Watcher
             Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
 
             _logger.Info($"------ {Helper.AppNameWithVersion} ------");
+
+            UpdateApp();
+        }
+
+        private async Task UpdateApp()
+        {
+            _logger.Info($"Start");
+
+            try
+            {
+                using (var mgr = new UpdateManager("K:\\updates\\Watcher"))
+                {
+                    _logger.Info($"UpdateApp()");
+                    await mgr.UpdateApp();
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.Error(e);
+            }
         }
 
         private void Current_DispatcherUnhandledException(object sender,
