@@ -6,6 +6,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Security.AccessControl;
+using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
@@ -20,7 +22,7 @@ namespace Watcher
     {
         private static Logger _logger = LogManager.GetCurrentClassLogger();
 
-        public string Version => Helper.AppNameWithVersion;
+        public string AppNameWithVersion => Helper.AppNameWithVersion;
 
         public ObservableCollection<Change> Changes { get; } = new ObservableCollection<Change>();
 
@@ -71,10 +73,14 @@ namespace Watcher
             Enabled = false,
         };
 
+        public string SettingsPath { get; } = $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}\\buh\\{Helper.AppName}\\Settings.json";
+
         public MainViewModel()
         {
             //avoid a "object reference not set to an instance of an object@ exception in XAML code while design time
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
+
+            _logger.Info($"SettingsPath: {SettingsPath}");
 
             BindingOperations.CollectionRegistering += BindingOperationsOnCollectionRegistering;
 
@@ -160,16 +166,24 @@ namespace Watcher
 
             var settingsJson = JsonConvert.SerializeObject(settings, Formatting.Indented);
 
-            File.WriteAllText("Watcher.json", settingsJson);
+            var settingsFolder = new DirectoryInfo(SettingsPath).Parent;
+
+            if (!settingsFolder.Exists)
+            {
+                settingsFolder.Create();
+            }
+
+            File.WriteAllText(SettingsPath, settingsJson, Encoding.UTF8);
+
             _logger.Info("Settings saved");
         }
 
         public void LoadSettings()
         {
             _logger.Info("Settings loading...");
-            if (File.Exists("Watcher.json"))
+            if (File.Exists(SettingsPath))
             {
-                var settingsJson = File.ReadAllText("Watcher.json");
+                var settingsJson = File.ReadAllText(SettingsPath);
                 var settings = JsonConvert.DeserializeObject<Settings>(settingsJson);
 
                 if (settings.Watchers?.Any() ?? false)

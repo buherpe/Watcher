@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using NLog;
@@ -24,6 +25,10 @@ namespace Watcher
 
         public App()
         {
+            //new DirectoryInfo("C:\\Users\\buh\\AppData\\Roaming\\buh\\Watcher\\Settings.json").Parent.Create();
+            //Console.WriteLine($"{new DirectoryInfo("C:\\Users\\buh\\AppData\\Roaming\\buh\\Watcher\\Settings.json").Parent.Exists}");
+            //Environment.Exit(-1);
+
             LogManager.Configuration = Helper.DefaultLogConfig();
             Exit += App_Exit;
             Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
