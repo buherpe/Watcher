@@ -10,13 +10,17 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using Newtonsoft.Json;
+using NLog;
+using Tools;
 using Timer = System.Timers.Timer;
 
 namespace Watcher
 {
-    public class MainViewModel : INotifyPropertyChanged
+    public class MainViewModel : ObservableObject, IDisposable
     {
-        public string Version => Assembly.GetEntryAssembly().GetName().Version.ToString();
+        private static Logger _logger = LogManager.GetCurrentClassLogger();
+
+        public string Version => Helper.AppNameWithVersion;
 
         public ObservableCollection<Change> Changes { get; } = new ObservableCollection<Change>();
 
@@ -28,17 +32,17 @@ namespace Watcher
 
         private int _watchersCounter;
 
-        private RelayCommand _addWatcherCommand;
+        private RelayCommand<object> _addWatcherCommand;
 
-        public RelayCommand AddWatcherCommand =>
+        public RelayCommand<object> AddWatcherCommand =>
             _addWatcherCommand ??
-            (_addWatcherCommand = new RelayCommand(obj => AddWatcher()));
+            (_addWatcherCommand = new RelayCommand<object>(obj => AddWatcher()));
 
-        private RelayCommand _closingCommand;
+        private RelayCommand<object> _closingCommand;
 
-        public RelayCommand ClosingCommand =>
+        public RelayCommand<object> ClosingCommand =>
             _closingCommand ??
-            (_closingCommand = new RelayCommand(obj =>
+            (_closingCommand = new RelayCommand<object>(obj =>
             {
                 if (_savingTimer.Enabled)
                 {
@@ -47,11 +51,15 @@ namespace Watcher
                 }
             }));
 
-        private RelayCommand _sortingCommand;
+        private RelayCommand<object> _sortingCommand;
 
-        public RelayCommand SortingCommand =>
+        public RelayCommand<object> SortingCommand =>
             _sortingCommand ??
-            (_sortingCommand = new RelayCommand(obj => RestartSavingTimer()));
+            (_sortingCommand = new RelayCommand<object>(obj =>
+            {
+                //Console.WriteLine($"obj == null: {obj == null}");
+                //RestartSavingTimer();
+            }));
 
         private object _lockChanges = new object();
 
@@ -68,23 +76,26 @@ namespace Watcher
             //avoid a "object reference not set to an instance of an object@ exception in XAML code while design time
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
 
-            BindingOperations.CollectionRegistering += (s, e) =>
-            {
-                if (Equals(e.Collection, Changes))
-                {
-                    Console.WriteLine("CollectionRegistering Event: EnableCollectionSynchronization for Changes");
-                    BindingOperations.EnableCollectionSynchronization(Changes, _lockChanges);
-                }
-                //else if (Equals(e.Collection, Columns))
-                //{
-                //    Console.WriteLine("CollectionRegistering Event: EnableCollectionSynchronization for Columns");
-                //    BindingOperations.EnableCollectionSynchronization(Columns, _lockColumns);
-                //}
-            };
+            BindingOperations.CollectionRegistering += BindingOperationsOnCollectionRegistering;
 
             _savingTimer.Elapsed += (s, e) => { SaveSettings(); };
 
             LoadSettings();
+        }
+
+        private void BindingOperationsOnCollectionRegistering(object sender, CollectionRegisteringEventArgs e)
+        {
+            if (Equals(e.Collection, Changes))
+            {
+                _logger.Debug("CollectionRegistering Event: EnableCollectionSynchronization for Changes");
+                BindingOperations.EnableCollectionSynchronization(Changes, _lockChanges);
+            }
+
+            //else if (Equals(e.Collection, Columns))
+            //{
+            //    Console.WriteLine("CollectionRegistering Event: EnableCollectionSynchronization for Columns");
+            //    BindingOperations.EnableCollectionSynchronization(Columns, _lockColumns);
+            //}
         }
 
         public void AddWatcher(ChangeWatcher watcher)
@@ -134,14 +145,14 @@ namespace Watcher
 
         public void RestartSavingTimer()
         {
-            Console.WriteLine("Restart saving timer");
+            _logger.Info("Restart saving timer");
             _savingTimer.Stop();
             _savingTimer.Start();
         }
 
         public void SaveSettings()
         {
-            Console.WriteLine("Settings saving...");
+            _logger.Info("Settings saving...");
             var settings = new Settings();
 
             settings.Watchers = new List<ChangeWatcher>(Watchers);
@@ -150,12 +161,12 @@ namespace Watcher
             var settingsJson = JsonConvert.SerializeObject(settings, Formatting.Indented);
 
             File.WriteAllText("Watcher.json", settingsJson);
-            Console.WriteLine("Settings saved");
+            _logger.Info("Settings saved");
         }
 
         public void LoadSettings()
         {
-            Console.WriteLine("Settings loading...");
+            _logger.Info("Settings loading...");
             if (File.Exists("Watcher.json"))
             {
                 var settingsJson = File.ReadAllText("Watcher.json");
@@ -181,16 +192,12 @@ namespace Watcher
                     .Add(new SortDescription("Id", ListSortDirection.Descending));
             }
 
-            Console.WriteLine("Settings loaded");
+            _logger.Info("Settings loaded");
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        [Annotations.NotifyPropertyChangedInvocator]
-        private void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        public void Dispose()
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-            CommandManager.InvalidateRequerySuggested();
+            _savingTimer?.Dispose();
         }
     }
 }

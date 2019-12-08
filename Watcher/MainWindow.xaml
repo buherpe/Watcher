@@ -6,7 +6,7 @@
         xmlns:watcher="clr-namespace:Watcher"
         xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
         mc:Ignorable="d"
-        Title="{Binding Version, StringFormat='Watcher v{0}'}"
+        Title="{Binding Version}"
         Height="450" Width="800">
     <i:Interaction.Triggers>
         <i:EventTrigger EventName="Closing">

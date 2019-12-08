@@ -4,11 +4,12 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using Newtonsoft.Json;
+using Tools;
 using Watcher.Annotations;
 
 namespace Watcher
 {
-    public class ChangeWatcher : INotifyPropertyChanged, IDisposable, IDataErrorInfo
+    public class ChangeWatcher : ObservableObject, IDisposable, IDataErrorInfo
     {
         private readonly FileSystemWatcher _watcher = new FileSystemWatcher();
 
@@ -18,11 +19,7 @@ namespace Watcher
         public int Id
         {
             get => _id;
-            set
-            {
-                _id = value;
-                OnPropertyChanged();
-            }
+            set => OnPropertyChanged(ref _id, value);
         }
 
         private string _path;
@@ -32,10 +29,11 @@ namespace Watcher
             get => _path;
             set
             {
-                _path = value;
                 if (!ValidatePath(value)) return;
-                _watcher.Path = value;
-                OnPropertyChanged();
+                if (OnPropertyChanged(ref _path, value))
+                {
+                    _watcher.Path = value;
+                }
             }
         }
 
@@ -46,9 +44,10 @@ namespace Watcher
             get => _filter;
             set
             {
-                _filter = value;
-                _watcher.Filter = value;
-                OnPropertyChanged();
+                if (OnPropertyChanged(ref _filter, value))
+                {
+                    _watcher.Filter = value;
+                }
             }
         }
 
@@ -59,9 +58,10 @@ namespace Watcher
             get => _includeSubdirectories;
             set
             {
-                _includeSubdirectories = value;
-                _watcher.IncludeSubdirectories = value;
-                OnPropertyChanged();
+                if (OnPropertyChanged(ref _includeSubdirectories, value))
+                {
+                    _watcher.IncludeSubdirectories = value;
+                }
             }
         }
 
@@ -72,9 +72,10 @@ namespace Watcher
             get => _enableRaisingEvents;
             set
             {
-                _enableRaisingEvents = value;
-                _watcher.EnableRaisingEvents = value;
-                OnPropertyChanged();
+                if (OnPropertyChanged(ref _enableRaisingEvents, value))
+                {
+                    _watcher.EnableRaisingEvents = value;
+                }
             }
         }
 
@@ -90,18 +91,21 @@ namespace Watcher
                     case nameof(Path):
                         if (!ValidatePath(Path)) error = "Invalid path";
                         break;
+                    default:
+                        error = "qwe";
+                        break;
                 }
 
                 return error;
             }
         }
 
-        private RelayCommand _deleteCommand;
+        private RelayCommand<object> _deleteCommand;
 
         [JsonIgnore]
-        public RelayCommand DeleteCommand =>
+        public RelayCommand<object> DeleteCommand =>
             _deleteCommand ??
-            (_deleteCommand = new RelayCommand(obj =>
+            (_deleteCommand = new RelayCommand<object>(obj =>
             {
                 OnWatcherDeleted?.Invoke(Id);
                 Dispose();
@@ -152,16 +156,6 @@ namespace Watcher
         public delegate void WatcherDeletedEventHandler(int id);
 
         public event WatcherDeletedEventHandler OnWatcherDeleted;
-
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        [NotifyPropertyChangedInvocator]
-        private void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-            CommandManager.InvalidateRequerySuggested();
-        }
 
         public void Dispose()
         {
