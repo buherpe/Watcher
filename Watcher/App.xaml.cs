@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using NLog;
@@ -12,30 +11,20 @@ namespace Watcher
     {
         private static Logger _logger = LogManager.GetCurrentClassLogger();
 
-        //public App()
-        //{
-        //    AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
-        //}
-
-        //private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
-        //{
-        //    Console.WriteLine($"{e}");
-        //    Console.WriteLine($"{e.ExceptionObject}");
-        //}
-
         public App()
         {
-            //new DirectoryInfo("C:\\Users\\buh\\AppData\\Roaming\\buh\\Watcher\\Settings.json").Parent.Create();
-            //Console.WriteLine($"{new DirectoryInfo("C:\\Users\\buh\\AppData\\Roaming\\buh\\Watcher\\Settings.json").Parent.Exists}");
-            //Environment.Exit(-1);
-
-            LogManager.Configuration = Helper.DefaultLogConfig();
+            LogManager.Configuration = Helper.DefaultLogConfig()
+#if !DEBUG
+                    .SetFileNamePrefix("..\\")
+#endif
+                ;
             Exit += App_Exit;
             Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
 
-            _logger.Info($"------ {Helper.AppNameWithVersion} ------");
-
+            _logger.HelloWorld();
+#if !DEBUG
             UpdateApp();
+#endif
         }
 
         private async Task UpdateApp()
@@ -60,7 +49,8 @@ namespace Watcher
             System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
             _logger.Error(e.Exception);
-            MessageBox.Show($"{e.Exception.Message}\r\n\r\n\r\n{e.Exception}", $"Ошибка :: {Helper.AppNameWithVersion}", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"{e.Exception.Message}\r\n\r\n\r\n{e.Exception}", $"Ошибка :: {Helper.AppNameWithVersion}",
+                MessageBoxButton.OK, MessageBoxImage.Error);
             e.Handled = true;
         }
 
