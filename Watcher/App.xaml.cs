@@ -33,7 +33,9 @@ namespace Watcher
 
             try
             {
-                using (var mgr = new UpdateManager("K:\\updates\\Watcher"))
+                var urlOrPath = $"https://buherpet.tk/updates/{Helper.AppName}";
+                _logger.Info($"urlOrPath: {urlOrPath}");
+                using (var mgr = new UpdateManager(urlOrPath))
                 {
                     _logger.Info($"UpdateApp()");
                     await mgr.UpdateApp();
