@@ -1,13 +1,14 @@
-﻿<Window x:Class="Watcher.MainWindow"
+﻿<controls:MetroWindow x:Class="Watcher.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:watcher="clr-namespace:Watcher"
         xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
+        xmlns:controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         mc:Ignorable="d"
         Title="{Binding AppNameWithVersion}"
-        Height="450" Width="800">
+        Height="685.3" Width="957">
     <i:Interaction.Triggers>
         <i:EventTrigger EventName="Closing">
             <i:InvokeCommandAction Command="{Binding ClosingCommand}"/>
@@ -24,8 +25,8 @@
         </CollectionViewSource>-->
     </Window.Resources>
     <Grid>
-        <Button Command="{Binding AddWatcherCommand}" Content="Add watcher" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="84"/>
-        <ScrollViewer Margin="0,35,0,0" Height="114" VerticalAlignment="Top" VerticalScrollBarVisibility="Auto">
+        <Button Command="{Binding AddWatcherCommand}" Content="Add watcher" HorizontalAlignment="Left" Margin="10,138,0,0" VerticalAlignment="Top" Width="111"/>
+        <ScrollViewer Height="133" VerticalAlignment="Top" VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding Watchers}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -62,7 +63,8 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="Path: "/>
-                                    <watcher:CustomTextBox Grid.Column="1" Placeholder="e.g. C:\">
+                                    <TextBox Grid.Column="1" Text="{Binding Path, UpdateSourceTrigger=PropertyChanged}" controls:TextBoxHelper.Watermark="e.g. C:\" />
+                                    <!--<watcher:CustomTextBox Grid.Column="1" Placeholder="e.g. C:\">
                                         <watcher:CustomTextBox.Text>
                                             <Binding Path="Path" UpdateSourceTrigger="PropertyChanged">
                                                 <Binding.ValidationRules>
@@ -70,7 +72,7 @@
                                                 </Binding.ValidationRules>
                                             </Binding>
                                         </watcher:CustomTextBox.Text>
-                                    </watcher:CustomTextBox>
+                                    </watcher:CustomTextBox>-->
                                 </Grid>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -78,7 +80,7 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="Filter: "/>
-                                    <watcher:CustomTextBox Grid.Column="1" Placeholder="e.g. *.txt" Text="{Binding Path=Filter, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBox Grid.Column="1" Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}" controls:TextBoxHelper.Watermark="e.g. *.txt" />
                                 </Grid>
                                 <CheckBox Content="Include subdirectories" IsChecked="{Binding IncludeSubdirectories, UpdateSourceTrigger=PropertyChanged}"/>
                                 <CheckBox Content="Enable raising events" IsChecked="{Binding EnableRaisingEvents, UpdateSourceTrigger=PropertyChanged}"/>
@@ -89,7 +91,7 @@
             </ItemsControl>
         </ScrollViewer>
 
-        <DataGrid ItemsSource="{Binding Changes}" Margin="0,149,0,0" AutoGenerateColumns="False" IsReadOnly="True">
+        <DataGrid ItemsSource="{Binding Changes}" Margin="0,170,0,0" AutoGenerateColumns="False" IsReadOnly="True">
             <i:Interaction.Triggers>
                 <i:EventTrigger EventName="Sorting">
                     <i:InvokeCommandAction Command="{Binding SortingCommand}"/>
@@ -133,12 +135,13 @@
                 <DataGridTextColumn Header="Old full path" Binding="{Binding OldFullPath}"/>
             </DataGrid.Columns>
 
-            <DataGrid.VerticalGridLinesBrush>
+            <!--<DataGrid.VerticalGridLinesBrush>
                 <SolidColorBrush Color="{StaticResource {x:Static SystemColors.AppWorkspaceColorKey}}"/>
             </DataGrid.VerticalGridLinesBrush>
             <DataGrid.HorizontalGridLinesBrush>
                 <SolidColorBrush Color="{StaticResource {x:Static SystemColors.ActiveBorderColorKey}}"/>
-            </DataGrid.HorizontalGridLinesBrush>
+            </DataGrid.HorizontalGridLinesBrush>-->
         </DataGrid>
+        <TextBlock HorizontalAlignment="Left" Margin="126,143,0,0" TextWrapping="Wrap" Text="TextBlock" VerticalAlignment="Top"/>
     </Grid>
-</Window>
+</controls:MetroWindow>
