@@ -5,12 +5,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Security.AccessControl;
 using System.Text;
-using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using DynamicData;
@@ -68,7 +63,7 @@ namespace Watcher
                 //RestartSavingTimer();
             }));
 
-        private object _lockChanges = new object();
+        //private object _lockChanges = new object();
 
         //private object _lockColumns = new object();
 
@@ -78,7 +73,8 @@ namespace Watcher
             Enabled = false,
         };
 
-        public string SettingsPath { get; } = $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}\\buh\\{Helper.AppName}\\Settings.json";
+        //public string SettingsPath { get; } = $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}\\buh\\{Helper.AppName}\\Settings.json";
+        public string SettingsPath { get; } = $"..\\Watcher.json";
 
         public SourceCache<Change, int> ChangeCache { get; set; } = new SourceCache<Change, int>(x => x.Id);
 
@@ -90,18 +86,30 @@ namespace Watcher
 
         public PageParameterData PageParameters { get; } = new PageParameterData(1, 100);
 
+        private string _searchText;
+
+        public string SearchText
+        {
+            get => _searchText;
+            set => OnPropertyChanged(ref _searchText, value);
+        }
+
         public MainViewModel()
         {
             //avoid a "object reference not set to an instance of an object@ exception in XAML code while design time
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
 
+            var filter = this.WhenValueChanged(t => t.SearchText)
+                .Throttle(TimeSpan.FromMilliseconds(100))
+                .Select(BuildFilter);
+
             var pager = PageParameters.WhenChanged(vm => vm.PageSize, vm => vm.CurrentPage, (_, size, pge) => new PageRequest(pge, size))
-                .StartWith(new PageRequest(1, 25))
+                .StartWith(new PageRequest(1, 100))
                 .DistinctUntilChanged()
                 .Sample(TimeSpan.FromMilliseconds(100));
 
             _cleanUp = ChangeCache.Connect()
-                //.Filter(x => x.Id == 1)
+                .Filter(filter)
                 .Sort(SortExpressionComparer<Change>.Descending(t => t.Id), SortOptimisations.ComparesImmutableValuesOnly, 25)
                 .Page(pager)
                 .ObserveOnDispatcher()
@@ -112,27 +120,37 @@ namespace Watcher
 
             _logger.Info($"SettingsPath: {SettingsPath}");
 
-            BindingOperations.CollectionRegistering += BindingOperationsOnCollectionRegistering;
+            //BindingOperations.CollectionRegistering += BindingOperationsOnCollectionRegistering;
 
             _savingTimer.Elapsed += (s, e) => { SaveSettings(); };
 
             LoadSettings();
         }
 
-        private void BindingOperationsOnCollectionRegistering(object sender, CollectionRegisteringEventArgs e)
+        private Func<Change, bool> BuildFilter(string searchText)
         {
-            //if (Equals(e.Collection, Changes))
-            //{
-            //    _logger.Debug("CollectionRegistering Event: EnableCollectionSynchronization for Changes");
-            //    BindingOperations.EnableCollectionSynchronization(Changes, _lockChanges);
-            //}
+            if (string.IsNullOrEmpty(searchText)) return change => true;
 
-            //else if (Equals(e.Collection, Columns))
-            //{
-            //    Console.WriteLine("CollectionRegistering Event: EnableCollectionSynchronization for Columns");
-            //    BindingOperations.EnableCollectionSynchronization(Columns, _lockColumns);
-            //}
+            return change => searchText.Split(' ').All(x => change.FullPath.Contains(x, StringComparison.OrdinalIgnoreCase));
+            
+            //return change => change.FullPath.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+            //                 change.OldFullPath.Contains(searchText, StringComparison.OrdinalIgnoreCase);
         }
+
+        //private void BindingOperationsOnCollectionRegistering(object sender, CollectionRegisteringEventArgs e)
+        //{
+        //    if (Equals(e.Collection, Changes))
+        //    {
+        //        _logger.Debug("CollectionRegistering Event: EnableCollectionSynchronization for Changes");
+        //        BindingOperations.EnableCollectionSynchronization(Changes, _lockChanges);
+        //    }
+
+        //    else if (Equals(e.Collection, Columns))
+        //    {
+        //        Console.WriteLine("CollectionRegistering Event: EnableCollectionSynchronization for Columns");
+        //        BindingOperations.EnableCollectionSynchronization(Columns, _lockColumns);
+        //    }
+        //}
 
         public void AddWatcher(ChangeWatcher watcher)
         {
@@ -244,6 +262,15 @@ namespace Watcher
         {
             _savingTimer?.Dispose();
             _cleanUp.Dispose();
+        }
+    }
+
+
+    public static class Extensions
+    {
+        public static bool Contains(this string source, string toCheck, StringComparison comp)
+        {
+            return source.IndexOf(toCheck, comp) >= 0;
         }
     }
 

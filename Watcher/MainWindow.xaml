@@ -164,10 +164,11 @@
             </TextBlock>
             <RepeatButton Command="{Binding PageParameters.NextPageCommand}" Content="→|" HorizontalAlignment="Left" VerticalAlignment="Top" Width="35"/>
             <TextBlock HorizontalAlignment="Left" TextWrapping="Wrap" VerticalAlignment="Top" Margin="5,5,0,0">
-                <Run Text="Total:"/>
+                <Run Text="Entities:"/>
                 <Run Text="{Binding PageParameters.TotalCount, Mode=OneWay}"/>
             </TextBlock>
         </StackPanel>
+        <TextBox HorizontalAlignment="Right" Height="23" Margin="0,138,10,0" TextWrapping="Wrap" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Top" Width="270" controls:TextBoxHelper.Watermark="Search"/>
 
         <!--<StatusBar Margin="0,632,0,0" >
             <StatusBarItem>
