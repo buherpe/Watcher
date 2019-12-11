@@ -8,7 +8,7 @@
         xmlns:controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         mc:Ignorable="d"
         Title="{Binding AppNameWithVersion}"
-        Height="685.3" Width="957">
+        Height="685" Width="957">
     <i:Interaction.Triggers>
         <i:EventTrigger EventName="Closing">
             <i:InvokeCommandAction Command="{Binding ClosingCommand}"/>
@@ -91,7 +91,7 @@
             </ItemsControl>
         </ScrollViewer>
 
-        <DataGrid ItemsSource="{Binding Changes}" Margin="0,170,0,0" AutoGenerateColumns="False" IsReadOnly="True">
+        <DataGrid ItemsSource="{Binding ChangeData}" Margin="0,170,0,43" AutoGenerateColumns="False" IsReadOnly="True">
             <i:Interaction.Triggers>
                 <i:EventTrigger EventName="Sorting">
                     <i:InvokeCommandAction Command="{Binding SortingCommand}"/>
@@ -126,13 +126,23 @@
                 </DataTemplate>
             </DataGrid.Resources>
 
+            <!--<DataGrid.CellStyle>
+                <Style BasedOn="{StaticResource MetroDataGridCell}" TargetType="{x:Type DataGridCell}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding }">
+
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.CellStyle>-->
+
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Id" Binding="{Binding Id}"/>
-                <DataGridTextColumn Header="Date time" Binding="{Binding DateTime}"/>
-                <DataGridTextColumn Header="Watcher id" Binding="{Binding WatcherId}"/>
-                <DataGridTemplateColumn Header="Change type" CellTemplate="{StaticResource ChangeTypeTemplate}" SortMemberPath="ChangeType" CanUserSort="True"/>
-                <DataGridTextColumn Header="Full path" Binding="{Binding FullPath}"/>
-                <DataGridTextColumn Header="Old full path" Binding="{Binding OldFullPath}"/>
+                <DataGridTextColumn Header="Id" Binding="{Binding Id}" CanUserSort="False"/>
+                <DataGridTextColumn Header="Date time" Binding="{Binding DateTime}" CanUserSort="False"/>
+                <DataGridTextColumn Header="Watcher" Binding="{Binding WatcherId}" CanUserSort="False"/>
+                <DataGridTemplateColumn Header="Type" CellTemplate="{StaticResource ChangeTypeTemplate}" SortMemberPath="ChangeType" CanUserSort="False"/>
+                <DataGridTextColumn Header="Path" Binding="{Binding FullPath}" CanUserSort="False" Width="300"/>
+                <DataGridTextColumn Header="Old path" Binding="{Binding OldFullPath}" CanUserSort="False" Width="300"/>
             </DataGrid.Columns>
 
             <!--<DataGrid.VerticalGridLinesBrush>
@@ -142,6 +152,39 @@
                 <SolidColorBrush Color="{StaticResource {x:Static SystemColors.ActiveBorderColorKey}}"/>
             </DataGrid.HorizontalGridLinesBrush>-->
         </DataGrid>
-        <TextBlock HorizontalAlignment="Left" Margin="126,143,0,0" TextWrapping="Wrap" Text="TextBlock" VerticalAlignment="Top"/>
+        <StackPanel Orientation="Horizontal" Height="28" VerticalAlignment="Bottom" Margin="10,0,10,10" >
+            <RepeatButton Command="{Binding PageParameters.PreviousPageCommand}" Content="|←" HorizontalAlignment="Left" VerticalAlignment="Top" Width="35"/>
+            <TextBlock HorizontalAlignment="Left" TextWrapping="Wrap" VerticalAlignment="Top" Margin="5,5,5,0">
+                <Run Text="Page"/>
+                <Run Text="{Binding PageParameters.CurrentPage, Mode=OneWay}"/>
+                <Run Text="of"/>
+                <Run Text="{Binding PageParameters.PageCount, Mode=OneWay}"/>
+                <Run Text="("/><Run Text="{Binding PageParameters.PageSize, Mode=OneWay}"/>
+                <Run Text="items per page)"/>
+            </TextBlock>
+            <RepeatButton Command="{Binding PageParameters.NextPageCommand}" Content="→|" HorizontalAlignment="Left" VerticalAlignment="Top" Width="35"/>
+            <TextBlock HorizontalAlignment="Left" TextWrapping="Wrap" VerticalAlignment="Top" Margin="5,5,0,0">
+                <Run Text="Total:"/>
+                <Run Text="{Binding PageParameters.TotalCount, Mode=OneWay}"/>
+            </TextBlock>
+        </StackPanel>
+
+        <!--<StatusBar Margin="0,632,0,0" >
+            <StatusBarItem>
+                <Button Style="{DynamicResource MetroCircleButtonStyle}">
+                    <Rectangle Width="20"
+                               Height="20"
+                               Fill="{Binding Path=Foreground, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Button}}}">
+                        <Rectangle.OpacityMask>
+                            <VisualBrush Stretch="Fill" Visual="{DynamicResource RevealButtonIcon}" />
+                        </Rectangle.OpacityMask>
+                    </Rectangle>
+                </Button>
+            </StatusBarItem>
+            <StatusBarItem>MahApps.Metro DEMO Application</StatusBarItem>
+            <Separator />
+            <StatusBarItem>Selected Tab:</StatusBarItem>
+            <StatusBarItem Content="{Binding ElementName=MainTabControl, Path=SelectedItem.Header, Mode=OneWay}" />
+        </StatusBar>-->
     </Grid>
 </controls:MetroWindow>

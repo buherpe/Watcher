@@ -4,6 +4,8 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security.AccessControl;
@@ -11,6 +13,9 @@ using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using DynamicData;
+using DynamicData.Binding;
+using DynamicData.Operators;
 using Newtonsoft.Json;
 using NLog;
 using Tools;
@@ -24,7 +29,7 @@ namespace Watcher
 
         public string AppNameWithVersion => Helper.AppNameWithVersion;
 
-        public ObservableCollection<Change> Changes { get; } = new ObservableCollection<Change>();
+        //public ObservableCollection<Change> Changes { get; } = new ObservableCollection<Change>();
 
         //public ObservableCollection<DataGridColumn> Columns { get; } = new ObservableCollection<DataGridColumn>();
 
@@ -75,10 +80,35 @@ namespace Watcher
 
         public string SettingsPath { get; } = $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}\\buh\\{Helper.AppName}\\Settings.json";
 
+        public SourceCache<Change, int> ChangeCache { get; set; } = new SourceCache<Change, int>(x => x.Id);
+
+        public ReadOnlyObservableCollection<Change> ChangeData => _changeData;
+
+        private readonly ReadOnlyObservableCollection<Change> _changeData;
+
+        private readonly IDisposable _cleanUp;
+
+        public PageParameterData PageParameters { get; } = new PageParameterData(1, 100);
+
         public MainViewModel()
         {
             //avoid a "object reference not set to an instance of an object@ exception in XAML code while design time
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
+
+            var pager = PageParameters.WhenChanged(vm => vm.PageSize, vm => vm.CurrentPage, (_, size, pge) => new PageRequest(pge, size))
+                .StartWith(new PageRequest(1, 25))
+                .DistinctUntilChanged()
+                .Sample(TimeSpan.FromMilliseconds(100));
+
+            _cleanUp = ChangeCache.Connect()
+                //.Filter(x => x.Id == 1)
+                .Sort(SortExpressionComparer<Change>.Descending(t => t.Id), SortOptimisations.ComparesImmutableValuesOnly, 25)
+                .Page(pager)
+                .ObserveOnDispatcher()
+                .Do(changes => PageParameters.Update(changes.Response))
+                .Bind(out _changeData)
+                .DisposeMany()
+                .Subscribe();
 
             _logger.Info($"SettingsPath: {SettingsPath}");
 
@@ -91,11 +121,11 @@ namespace Watcher
 
         private void BindingOperationsOnCollectionRegistering(object sender, CollectionRegisteringEventArgs e)
         {
-            if (Equals(e.Collection, Changes))
-            {
-                _logger.Debug("CollectionRegistering Event: EnableCollectionSynchronization for Changes");
-                BindingOperations.EnableCollectionSynchronization(Changes, _lockChanges);
-            }
+            //if (Equals(e.Collection, Changes))
+            //{
+            //    _logger.Debug("CollectionRegistering Event: EnableCollectionSynchronization for Changes");
+            //    BindingOperations.EnableCollectionSynchronization(Changes, _lockChanges);
+            //}
 
             //else if (Equals(e.Collection, Columns))
             //{
@@ -135,9 +165,10 @@ namespace Watcher
 
         public void AddChange(int watcherId, ChangeType changeType, string fullPath, string oldFullPath = "")
         {
-            lock (_lockChanges)
+            //lock (_lockChanges)
             {
-                Changes.Add(new Change
+                //Changes.Add(new Change
+                ChangeCache.AddOrUpdate(new Change
                 {
                     Id = _changesCounter++,
                     DateTime = DateTime.Now,
@@ -202,8 +233,8 @@ namespace Watcher
             {
                 // first run
                 AddWatcher(@"C:\", enableRaisingEvents: true);
-                CollectionViewSource.GetDefaultView(Changes).SortDescriptions
-                    .Add(new SortDescription("Id", ListSortDirection.Descending));
+                //CollectionViewSource.GetDefaultView(Changes).SortDescriptions
+                //    .Add(new SortDescription("Id", ListSortDirection.Descending));
             }
 
             _logger.Info("Settings loaded");
@@ -212,6 +243,66 @@ namespace Watcher
         public void Dispose()
         {
             _savingTimer?.Dispose();
+            _cleanUp.Dispose();
+        }
+    }
+
+    public class PageParameterData : AbstractNotifyPropertyChanged
+    {
+        private readonly RelayCommand<object> _nextPageCommand;
+        private readonly RelayCommand<object> _previousPageCommand;
+        private int _currentPage;
+        private int _pageCount;
+        private int _pageSize;
+        private int _totalCount;
+
+        public PageParameterData(int currentPage, int pageSize)
+        {
+            _currentPage = currentPage;
+            _pageSize = pageSize;
+
+            _nextPageCommand = new RelayCommand<object>(o => CurrentPage = CurrentPage + 1, o => CurrentPage < PageCount);
+            _previousPageCommand = new RelayCommand<object>(o => CurrentPage = CurrentPage - 1, o => CurrentPage > 1);
+        }
+
+        public ICommand NextPageCommand => _nextPageCommand;
+
+        public ICommand PreviousPageCommand => _previousPageCommand;
+
+        public int TotalCount
+        {
+            get => _totalCount;
+            private set => SetAndRaise(ref _totalCount, value);
+        }
+
+        public int PageCount
+        {
+            get => _pageCount;
+            private set => SetAndRaise(ref _pageCount, value);
+        }
+
+        public int CurrentPage
+        {
+            get => _currentPage;
+            private set => SetAndRaise(ref _currentPage, value);
+        }
+
+
+        public int PageSize
+        {
+            get => _pageSize;
+            private set => SetAndRaise(ref _pageSize, value);
+        }
+
+
+        public void Update(IPageResponse response)
+        {
+            CurrentPage = response.Page;
+            PageSize = response.PageSize;
+            PageCount = response.Pages;
+            TotalCount = response.TotalSize;
+            _nextPageCommand.Refresh();
+            _previousPageCommand.Refresh();
         }
     }
 }

@@ -176,8 +176,9 @@
       <Version>2.0.20525</Version>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
-    <None Include="Resources\binoculars.ico" />
+    <Resource Include="Resources\binoculars.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
