@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
+using System.Windows;
 
 namespace Watcher
 {
@@ -7,5 +8,7 @@ namespace Watcher
     {
         public List<ChangeWatcher> Watchers { get; set; }
         //public SortDescriptionCollection SortingChanges { get; set; }
+
+        public WindowState WindowState { get; set; }
     }
 }

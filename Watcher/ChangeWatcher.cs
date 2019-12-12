@@ -79,24 +79,20 @@ namespace Watcher
             }
         }
 
-        string IDataErrorInfo.Error { get; }
+        public string Error { get; }
 
         public string this[string columnName]
         {
             get
             {
-                var error = string.Empty;
                 switch (columnName)
                 {
                     case nameof(Path):
-                        if (!ValidatePath(Path)) error = "Invalid path";
-                        break;
-                    default:
-                        error = "qwe";
+                        if (!ValidatePath(Path)) return "Invalid path";
                         break;
                 }
 
-                return error;
+                return null;
             }
         }
 
@@ -120,7 +116,7 @@ namespace Watcher
             _watcher.Changed += (s, e) => Changed?.Invoke(Id, e);
             _watcher.Renamed += (s, e) => Renamed?.Invoke(Id, e);
             _watcher.Deleted += (s, e) => Deleted?.Invoke(Id, e);
-            _watcher.Error += (s, e) => Error?.Invoke(Id, e);
+            _watcher.Error += (s, e) => OnError?.Invoke(Id, e);
         }
 
         private bool ValidatePath(string path)
@@ -150,7 +146,7 @@ namespace Watcher
 
         public delegate void ErrorEventHandler(int watcherId, ErrorEventArgs args);
 
-        public event ErrorEventHandler Error;
+        public event ErrorEventHandler OnError;
 
 
         public delegate void WatcherDeletedEventHandler(int id);

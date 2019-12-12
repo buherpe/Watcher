@@ -8,7 +8,8 @@
         xmlns:controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         mc:Ignorable="d"
         Title="{Binding AppNameWithVersion}"
-        Height="685" Width="957">
+        Height="700" Width="1000"
+        WindowState="{Binding WindowState}">
     <i:Interaction.Triggers>
         <i:EventTrigger EventName="Closing">
             <i:InvokeCommandAction Command="{Binding ClosingCommand}"/>
@@ -63,16 +64,18 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="Path: "/>
-                                    <TextBox Grid.Column="1" Text="{Binding Path, UpdateSourceTrigger=PropertyChanged}" controls:TextBoxHelper.Watermark="e.g. C:\" />
-                                    <!--<watcher:CustomTextBox Grid.Column="1" Placeholder="e.g. C:\">
-                                        <watcher:CustomTextBox.Text>
-                                            <Binding Path="Path" UpdateSourceTrigger="PropertyChanged">
-                                                <Binding.ValidationRules>
-                                                    <DataErrorValidationRule />
-                                                </Binding.ValidationRules>
+                                    <TextBox Grid.Column="1"
+                                             controls:TextBoxHelper.Watermark="e.g. C:\">
+                                        <TextBox.Text>
+                                            <Binding Path="Path" UpdateSourceTrigger="PropertyChanged"
+                                                     ValidatesOnDataErrors="True"
+                                                     NotifyOnValidationError="True">
+                                                <!--<Binding.ValidationRules>
+                                                    <ExceptionValidationRule />
+                                                </Binding.ValidationRules>-->
                                             </Binding>
-                                        </watcher:CustomTextBox.Text>
-                                    </watcher:CustomTextBox>-->
+                                        </TextBox.Text>
+                                    </TextBox>
                                 </Grid>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -168,7 +171,8 @@
                 <Run Text="{Binding PageParameters.TotalCount, Mode=OneWay}"/>
             </TextBlock>
         </StackPanel>
-        <TextBox HorizontalAlignment="Right" Height="23" Margin="0,138,10,0" TextWrapping="Wrap" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Top" Width="270" controls:TextBoxHelper.Watermark="Search"/>
+        <TextBox HorizontalAlignment="Right" Height="23" Margin="0,138,10,0" TextWrapping="Wrap" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Top" Width="270" 
+                 controls:TextBoxHelper.Watermark="Search" controls:TextBoxHelper.ClearTextButton="True"/>
 
         <!--<StatusBar Margin="0,632,0,0" >
             <StatusBarItem>

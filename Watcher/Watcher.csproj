@@ -81,6 +81,8 @@
     <Compile Include="ChangeType.cs" />
     <Compile Include="DataGridColumnsBehavior.cs" />
     <Compile Include="ChangeWatcher.cs" />
+    <Compile Include="Extensions.cs" />
+    <Compile Include="PageParameterData.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="WatcherEventArgs.cs" />
     <Page Include="MainWindow.xaml">

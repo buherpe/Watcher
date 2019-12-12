@@ -6,11 +6,11 @@ using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Text;
+using System.Windows;
 using System.Windows.Data;
-using System.Windows.Input;
 using DynamicData;
 using DynamicData.Binding;
-using DynamicData.Operators;
+using MahApps.Metro.Controls;
 using Newtonsoft.Json;
 using NLog;
 using Tools;
@@ -74,7 +74,7 @@ namespace Watcher
         };
 
         //public string SettingsPath { get; } = $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}\\buh\\{Helper.AppName}\\Settings.json";
-        public string SettingsPath { get; } = $"..\\Watcher.json";
+        public string SettingsPath { get; } = $"..\\Settings.json";
 
         public SourceCache<Change, int> ChangeCache { get; set; } = new SourceCache<Change, int>(x => x.Id);
 
@@ -94,6 +94,20 @@ namespace Watcher
             set => OnPropertyChanged(ref _searchText, value);
         }
 
+        private WindowState _windowState = WindowState.Normal;
+
+        public WindowState WindowState
+        {
+            get => _windowState;
+            set
+            {
+                if (OnPropertyChanged(ref _windowState, value))
+                {
+                    RestartSavingTimer();
+                }
+            }
+        }
+
         public MainViewModel()
         {
             //avoid a "object reference not set to an instance of an object@ exception in XAML code while design time
@@ -103,14 +117,16 @@ namespace Watcher
                 .Throttle(TimeSpan.FromMilliseconds(100))
                 .Select(BuildFilter);
 
-            var pager = PageParameters.WhenChanged(vm => vm.PageSize, vm => vm.CurrentPage, (_, size, pge) => new PageRequest(pge, size))
+            var pager = PageParameters.WhenChanged(vm => vm.PageSize, vm => vm.CurrentPage,
+                    (_, size, pge) => new PageRequest(pge, size))
                 .StartWith(new PageRequest(1, 100))
                 .DistinctUntilChanged()
                 .Sample(TimeSpan.FromMilliseconds(100));
 
             _cleanUp = ChangeCache.Connect()
                 .Filter(filter)
-                .Sort(SortExpressionComparer<Change>.Descending(t => t.Id), SortOptimisations.ComparesImmutableValuesOnly, 25)
+                .Sort(SortExpressionComparer<Change>.Descending(t => t.Id),
+                    SortOptimisations.ComparesImmutableValuesOnly, 25)
                 .Page(pager)
                 .ObserveOnDispatcher()
                 .Do(changes => PageParameters.Update(changes.Response))
@@ -119,8 +135,6 @@ namespace Watcher
                 .Subscribe();
 
             _logger.Info($"SettingsPath: {SettingsPath}");
-
-            //BindingOperations.CollectionRegistering += BindingOperationsOnCollectionRegistering;
 
             _savingTimer.Elapsed += (s, e) => { SaveSettings(); };
 
@@ -131,26 +145,10 @@ namespace Watcher
         {
             if (string.IsNullOrEmpty(searchText)) return change => true;
 
-            return change => searchText.Split(' ').All(x => change.FullPath.Contains(x, StringComparison.OrdinalIgnoreCase));
-            
-            //return change => change.FullPath.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
-            //                 change.OldFullPath.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+            return change => searchText
+                .Split(' ')
+                .All(x => change.FullPath.Contains(x, StringComparison.OrdinalIgnoreCase));
         }
-
-        //private void BindingOperationsOnCollectionRegistering(object sender, CollectionRegisteringEventArgs e)
-        //{
-        //    if (Equals(e.Collection, Changes))
-        //    {
-        //        _logger.Debug("CollectionRegistering Event: EnableCollectionSynchronization for Changes");
-        //        BindingOperations.EnableCollectionSynchronization(Changes, _lockChanges);
-        //    }
-
-        //    else if (Equals(e.Collection, Columns))
-        //    {
-        //        Console.WriteLine("CollectionRegistering Event: EnableCollectionSynchronization for Columns");
-        //        BindingOperations.EnableCollectionSynchronization(Columns, _lockColumns);
-        //    }
-        //}
 
         public void AddWatcher(ChangeWatcher watcher)
         {
@@ -166,7 +164,11 @@ namespace Watcher
             watcher.Changed += (watcherId, e) => AddChange(watcherId, ChangeType.Changed, e.FullPath);
             watcher.Renamed += (watcherId, e) => AddChange(watcherId, ChangeType.Renamed, e.FullPath, e.OldFullPath);
             watcher.Deleted += (watcherId, e) => AddChange(watcherId, ChangeType.Deleted, e.FullPath);
-            watcher.Error += (watcherId, e) => AddChange(watcherId, ChangeType.Error, e.GetException().Message);
+            watcher.OnError += (watcherId, e) =>
+            {
+                _logger.Error(e.GetException());
+                AddChange(watcherId, ChangeType.Error, e.GetException().Message);
+            };
             watcher.OnWatcherDeleted += watcherId =>
             {
                 Watchers.Remove(Watchers.FirstOrDefault(x => x.Id == watcherId));
@@ -176,26 +178,27 @@ namespace Watcher
             watcher.IncludeSubdirectories = includeSubdirectories;
             watcher.EnableRaisingEvents = enableRaisingEvents;
 
-            watcher.PropertyChanged += (s, e) => { RestartSavingTimer(); };
+            watcher.PropertyChanged += WatcherOnPropertyChanged;
 
             Watchers.Add(watcher);
         }
 
+        private void WatcherOnPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            RestartSavingTimer();
+        }
+
         public void AddChange(int watcherId, ChangeType changeType, string fullPath, string oldFullPath = "")
         {
-            //lock (_lockChanges)
+            ChangeCache.AddOrUpdate(new Change
             {
-                //Changes.Add(new Change
-                ChangeCache.AddOrUpdate(new Change
-                {
-                    Id = _changesCounter++,
-                    DateTime = DateTime.Now,
-                    WatcherId = watcherId,
-                    ChangeType = changeType,
-                    FullPath = fullPath,
-                    OldFullPath = oldFullPath
-                });
-            }
+                Id = _changesCounter++,
+                DateTime = DateTime.Now,
+                WatcherId = watcherId,
+                ChangeType = changeType,
+                FullPath = fullPath,
+                OldFullPath = oldFullPath
+            });
         }
 
         public void RestartSavingTimer()
@@ -212,7 +215,8 @@ namespace Watcher
 
             settings.Watchers = new List<ChangeWatcher>(Watchers);
             //settings.SortingChanges = CollectionViewSource.GetDefaultView(Changes).SortDescriptions;
-
+            settings.WindowState = WindowState;
+            
             var settingsJson = JsonConvert.SerializeObject(settings, Formatting.Indented);
 
             var settingsFolder = new DirectoryInfo(SettingsPath).Parent;
@@ -241,6 +245,8 @@ namespace Watcher
                         AddWatcher(watcher);
                     }
 
+                WindowState = settings.WindowState;
+
                 //if (settings.SortingChanges?.Any() ?? false)
                 //    foreach (var settingsSortingChange in settings.SortingChanges)
                 //    {
@@ -262,74 +268,6 @@ namespace Watcher
         {
             _savingTimer?.Dispose();
             _cleanUp.Dispose();
-        }
-    }
-
-
-    public static class Extensions
-    {
-        public static bool Contains(this string source, string toCheck, StringComparison comp)
-        {
-            return source.IndexOf(toCheck, comp) >= 0;
-        }
-    }
-
-    public class PageParameterData : AbstractNotifyPropertyChanged
-    {
-        private readonly RelayCommand<object> _nextPageCommand;
-        private readonly RelayCommand<object> _previousPageCommand;
-        private int _currentPage;
-        private int _pageCount;
-        private int _pageSize;
-        private int _totalCount;
-
-        public PageParameterData(int currentPage, int pageSize)
-        {
-            _currentPage = currentPage;
-            _pageSize = pageSize;
-
-            _nextPageCommand = new RelayCommand<object>(o => CurrentPage = CurrentPage + 1, o => CurrentPage < PageCount);
-            _previousPageCommand = new RelayCommand<object>(o => CurrentPage = CurrentPage - 1, o => CurrentPage > 1);
-        }
-
-        public ICommand NextPageCommand => _nextPageCommand;
-
-        public ICommand PreviousPageCommand => _previousPageCommand;
-
-        public int TotalCount
-        {
-            get => _totalCount;
-            private set => SetAndRaise(ref _totalCount, value);
-        }
-
-        public int PageCount
-        {
-            get => _pageCount;
-            private set => SetAndRaise(ref _pageCount, value);
-        }
-
-        public int CurrentPage
-        {
-            get => _currentPage;
-            private set => SetAndRaise(ref _currentPage, value);
-        }
-
-
-        public int PageSize
-        {
-            get => _pageSize;
-            private set => SetAndRaise(ref _pageSize, value);
-        }
-
-
-        public void Update(IPageResponse response)
-        {
-            CurrentPage = response.Page;
-            PageSize = response.PageSize;
-            PageCount = response.Pages;
-            TotalCount = response.TotalSize;
-            _nextPageCommand.Refresh();
-            _previousPageCommand.Refresh();
         }
     }
 }
