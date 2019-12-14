@@ -6,15 +6,28 @@
         xmlns:watcher="clr-namespace:Watcher"
         xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
         xmlns:controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
         mc:Ignorable="d"
         Title="{Binding AppNameWithVersion}"
         Height="700" Width="1000"
-        WindowState="{Binding WindowState}">
+        WindowState="{Binding WindowState}"
+        mah:DialogParticipation.Register="{Binding}">
     <i:Interaction.Triggers>
         <i:EventTrigger EventName="Closing">
             <i:InvokeCommandAction Command="{Binding ClosingCommand}"/>
         </i:EventTrigger>
     </i:Interaction.Triggers>
+    <controls:MetroWindow.RightWindowCommands>
+        <controls:WindowCommands>
+            <Button Content="About" Command="{Binding AboutCommand}"/>
+            <!--<Button>
+                <StackPanel Orientation="Horizontal">
+                    --><!--<iconPacks:PackIconModern Width="24" Height="24" Kind="FoodCupcake" />--><!--
+                    <TextBlock Margin="4 0 0 0" VerticalAlignment="Center" Text="deploy cupcakes" />
+                </StackPanel>
+            </Button>-->
+        </controls:WindowCommands>
+    </controls:MetroWindow.RightWindowCommands>
     <Window.DataContext>
         <watcher:MainViewModel/>
     </Window.DataContext>

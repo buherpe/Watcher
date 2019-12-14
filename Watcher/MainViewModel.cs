@@ -11,6 +11,7 @@ using System.Windows.Data;
 using DynamicData;
 using DynamicData.Binding;
 using MahApps.Metro.Controls;
+using MahApps.Metro.Controls.Dialogs;
 using Newtonsoft.Json;
 using NLog;
 using Tools;
@@ -63,9 +64,15 @@ namespace Watcher
                 //RestartSavingTimer();
             }));
 
-        //private object _lockChanges = new object();
+        private RelayCommand<object> _aboutCommand;
 
-        //private object _lockColumns = new object();
+        public RelayCommand<object> AboutCommand =>
+            _aboutCommand ??
+            (_aboutCommand = new RelayCommand<object>(obj =>
+            {
+                DialogCoordinator.Instance.ShowMessageAsync(this, $"About",
+                    $"{Helper.AppNameWithVersion}\r\n\r\nIcon made by Freepik from www.flaticon.com");
+            }));
 
         private Timer _savingTimer = new Timer(5_000)
         {
@@ -73,8 +80,8 @@ namespace Watcher
             Enabled = false,
         };
 
-        //public string SettingsPath { get; } = $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}\\buh\\{Helper.AppName}\\Settings.json";
-        public string SettingsPath { get; } = $"..\\Settings.json";
+        public string SettingsPath { get; } = $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}\\{Helper.AppName}\\Settings.json";
+        //public string SettingsPath { get; } = $"..\\Settings.json";
 
         public SourceCache<Change, int> ChangeCache { get; set; } = new SourceCache<Change, int>(x => x.Id);
 
