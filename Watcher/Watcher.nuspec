@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>Watcher</id>
+    <version>$version$</version>
+    <title></title>
+    <authors>buh</authors>
+    <owners></owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>My package description.</description>
+  </metadata>
+  <files>
+    <file src="Watcher.exe" target="lib\net48\Watcher.exe" />
+    <file src="Watcher.exe.config" target="lib\net48\Watcher.exe.config" />
+    <file src="Watcher.pdb" target="lib\net48\Watcher.pdb" />
+  </files>
+</package>

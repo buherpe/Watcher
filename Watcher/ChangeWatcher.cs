@@ -96,12 +96,12 @@ namespace Watcher
             }
         }
 
-        private RelayCommand<object> _deleteCommand;
+        private RelayCommand _deleteCommand;
 
         [JsonIgnore]
-        public RelayCommand<object> DeleteCommand =>
+        public RelayCommand DeleteCommand =>
             _deleteCommand ??
-            (_deleteCommand = new RelayCommand<object>(obj =>
+            (_deleteCommand = new RelayCommand(obj =>
             {
                 OnWatcherDeleted?.Invoke(Id);
                 Dispose();

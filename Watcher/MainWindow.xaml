@@ -11,7 +11,10 @@
         Title="{Binding AppNameWithVersion}"
         Height="700" Width="1000"
         WindowState="{Binding WindowState}"
-        mah:DialogParticipation.Register="{Binding}">
+        mah:DialogParticipation.Register="{Binding}"
+        Icon="Resources/binoculars.ico"
+        WindowTransitionsEnabled="False"
+        >
     <i:Interaction.Triggers>
         <i:EventTrigger EventName="Closing">
             <i:InvokeCommandAction Command="{Binding ClosingCommand}"/>
@@ -19,19 +22,42 @@
     </i:Interaction.Triggers>
     <controls:MetroWindow.RightWindowCommands>
         <controls:WindowCommands>
-            <Button Content="About" Command="{Binding AboutCommand}"/>
-            <!--<Button>
+            <!--<Button Background="Transparent" Padding="4">
                 <StackPanel Orientation="Horizontal">
                     --><!--<iconPacks:PackIconModern Width="24" Height="24" Kind="FoodCupcake" />--><!--
+                    <Viewbox>
+                        <Path
+                            Data="F1 M 2.88,17.2725C 0.959991,15.3475 0,12.95 0,10.08C 0,7.21002 0.959991,4.8125 2.88,2.88751C 4.80002,0.962494 7.19125,0 10.0537,0C 12.9163,0 15.3163,0.962494 17.2538,2.88751C 19.1913,4.8125 20.16,7.21002 20.16,10.08C 20.16,12.95 19.1913,15.3475 17.2538,17.2725C 15.3163,19.1975 12.9163,20.16 10.0537,20.16C 7.19125,20.16 4.80002,19.1975 2.88,17.2725 Z M 3.84,11.3625L 8.81998,11.3625L 8.81998,16.32L 11.34,16.32L 11.34,11.3625L 16.32,11.3625L 16.32,8.85001L 11.34,8.85001L 11.34,3.84L 8.81998,3.84L 8.81998,8.85001L 3.84,8.85001L 3.84,11.3625 Z "
+                            Fill="White"
+                            Stretch="UniformToFill" />
+                    </Viewbox>
                     <TextBlock Margin="4 0 0 0" VerticalAlignment="Center" Text="deploy cupcakes" />
                 </StackPanel>
             </Button>-->
+            <Button Command="{Binding UpdatedCommand}" Background="Transparent" Padding="4" ToolTip="Click to restart" Visibility="{Binding Updated, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel Orientation="Horizontal">
+                    <Viewbox Margin="2">
+                        <Path Data="M15.667,0.001C7.028,0.001,0,7.029,0,15.667c0,8.639,7.028,15.666,15.667,15.666c8.64,0,15.667-7.027,15.667-15.666
+		C31.334,7.029,24.307,0.001,15.667,0.001z M23.047,18.095l-7.381,7.381l-7.379-7.379c-0.781-0.781-0.781-2.046,0-2.828
+		c0.78-0.781,2.048-0.781,2.828,0l2.552,2.551V8.687c0-1.104,0.896-2,2-2c1.104,0,2,0.896,2,2v9.13l2.552-2.551
+		c0.78-0.781,2.049-0.781,2.828,0C23.828,16.047,23.828,17.313,23.047,18.095z"
+                                Fill="White"/>
+                    </Viewbox>
+                    <!--<TextBlock Margin="4 0 0 0" VerticalAlignment="Center" Text="Update ready" />-->
+                </StackPanel>
+            </Button>
+            <Button Content="About" Command="{Binding AboutCommand}"/>
         </controls:WindowCommands>
     </controls:MetroWindow.RightWindowCommands>
     <Window.DataContext>
         <watcher:MainViewModel/>
     </Window.DataContext>
     <Window.Resources>
+        <!--<ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Clean/Clean.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>-->
         <!--<CollectionViewSource Source="{Binding Changes}" x:Key="GridItems">
             <CollectionViewSource.SortDescriptions>
                 <componentModel:SortDescription PropertyName="Id" Direction="Descending"/>

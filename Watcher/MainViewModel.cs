@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
@@ -35,17 +36,17 @@ namespace Watcher
 
         private int _watchersCounter;
 
-        private RelayCommand<object> _addWatcherCommand;
+        private RelayCommand _addWatcherCommand;
 
-        public RelayCommand<object> AddWatcherCommand =>
+        public RelayCommand AddWatcherCommand =>
             _addWatcherCommand ??
-            (_addWatcherCommand = new RelayCommand<object>(obj => AddWatcher()));
+            (_addWatcherCommand = new RelayCommand(obj => AddWatcher()));
 
-        private RelayCommand<object> _closingCommand;
+        private RelayCommand _closingCommand;
 
-        public RelayCommand<object> ClosingCommand =>
+        public RelayCommand ClosingCommand =>
             _closingCommand ??
-            (_closingCommand = new RelayCommand<object>(obj =>
+            (_closingCommand = new RelayCommand(obj =>
             {
                 if (_savingTimer.Enabled)
                 {
@@ -54,24 +55,35 @@ namespace Watcher
                 }
             }));
 
-        private RelayCommand<object> _sortingCommand;
+        private RelayCommand _sortingCommand;
 
-        public RelayCommand<object> SortingCommand =>
+        public RelayCommand SortingCommand =>
             _sortingCommand ??
-            (_sortingCommand = new RelayCommand<object>(obj =>
+            (_sortingCommand = new RelayCommand(obj =>
             {
                 //Console.WriteLine($"obj == null: {obj == null}");
                 //RestartSavingTimer();
             }));
 
-        private RelayCommand<object> _aboutCommand;
+        private RelayCommand _aboutCommand;
 
-        public RelayCommand<object> AboutCommand =>
+        public RelayCommand AboutCommand =>
             _aboutCommand ??
-            (_aboutCommand = new RelayCommand<object>(obj =>
+            (_aboutCommand = new RelayCommand(obj =>
             {
                 DialogCoordinator.Instance.ShowMessageAsync(this, $"About",
-                    $"{Helper.AppNameWithVersion}\r\n\r\nIcon made by Freepik from www.flaticon.com");
+                    $"{Helper.AppNameWithVersion}\r\n\r\nIcons made by Freepik from www.flaticon.com");
+            }));
+
+        private RelayCommand _updatedCommand;
+
+        public RelayCommand UpdatedCommand =>
+            _updatedCommand ??
+            (_updatedCommand = new RelayCommand(obj =>
+            {
+                _logger.Info($"UpdatedCommand start");
+                Process.Start("..\\Watcher.exe");
+                Application.Current.Shutdown(0);
             }));
 
         private Timer _savingTimer = new Timer(5_000)
@@ -80,7 +92,8 @@ namespace Watcher
             Enabled = false,
         };
 
-        public string SettingsPath { get; } = $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}\\{Helper.AppName}\\Settings.json";
+        public string SettingsPath { get; } =
+            $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}\\{Helper.AppName}\\Settings.json";
         //public string SettingsPath { get; } = $"..\\Settings.json";
 
         public SourceCache<Change, int> ChangeCache { get; set; } = new SourceCache<Change, int>(x => x.Id);
@@ -115,10 +128,25 @@ namespace Watcher
             }
         }
 
+        private bool _updated;
+
+        public bool Updated
+        {
+            get => _updated;
+            set => OnPropertyChanged(ref _updated, value);
+        }
+
         public MainViewModel()
         {
             //avoid a "object reference not set to an instance of an object@ exception in XAML code while design time
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
+
+            UpdateHelper.Updated = OnUpdated;
+
+//#if DEBUG
+//            Observable.Timer(DateTimeOffset.Now.AddSeconds(2))
+//                .Subscribe(l => Updated = true);
+//#endif
 
             var filter = this.WhenValueChanged(t => t.SearchText)
                 .Throttle(TimeSpan.FromMilliseconds(100))
@@ -146,6 +174,11 @@ namespace Watcher
             _savingTimer.Elapsed += (s, e) => { SaveSettings(); };
 
             LoadSettings();
+        }
+
+        private void OnUpdated()
+        {
+            Updated = true;
         }
 
         private Func<Change, bool> BuildFilter(string searchText)
@@ -223,7 +256,7 @@ namespace Watcher
             settings.Watchers = new List<ChangeWatcher>(Watchers);
             //settings.SortingChanges = CollectionViewSource.GetDefaultView(Changes).SortDescriptions;
             settings.WindowState = WindowState;
-            
+
             var settingsJson = JsonConvert.SerializeObject(settings, Formatting.Indented);
 
             var settingsFolder = new DirectoryInfo(SettingsPath).Parent;

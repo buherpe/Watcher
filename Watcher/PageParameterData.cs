@@ -7,9 +7,9 @@ namespace Watcher
 {
     public class PageParameterData : AbstractNotifyPropertyChanged
     {
-        private readonly RelayCommand<object> _nextPageCommand;
+        private readonly RelayCommand _nextPageCommand;
 
-        private readonly RelayCommand<object> _previousPageCommand;
+        private readonly RelayCommand _previousPageCommand;
 
         private int _currentPage;
 
@@ -25,8 +25,8 @@ namespace Watcher
             _pageSize = pageSize;
 
             _nextPageCommand =
-                new RelayCommand<object>(o => CurrentPage = CurrentPage + 1, o => CurrentPage < PageCount);
-            _previousPageCommand = new RelayCommand<object>(o => CurrentPage = CurrentPage - 1, o => CurrentPage > 1);
+                new RelayCommand(o => CurrentPage = CurrentPage + 1, o => CurrentPage < PageCount);
+            _previousPageCommand = new RelayCommand(o => CurrentPage = CurrentPage - 1, o => CurrentPage > 1);
         }
 
         public ICommand NextPageCommand => _nextPageCommand;
