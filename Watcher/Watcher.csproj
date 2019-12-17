@@ -84,6 +84,7 @@
     <Compile Include="Extensions.cs" />
     <Compile Include="PageParameterData.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="UpdateHelper.cs" />
     <Compile Include="WatcherEventArgs.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -189,13 +190,13 @@
   </PropertyGroup>
   <PropertyGroup>
     <PostBuildEvent>
-	</PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
   <Target Name="AfterBuild" Condition=" '$(Configuration)' == 'Release'">
-  <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">
-    <Output TaskParameter="Assemblies" ItemName="myAssemblyInfo"/>
-  </GetAssemblyIdentity>
-  <Exec Command="C:\Users\buh\.nuget\packages\nuget.commandline\5.3.1\tools\nuget pack Watcher.nuspec -Version %(myAssemblyInfo.Version) -Properties Configuration=Release -OutputDirectory $(OutDir) -BasePath $(OutDir)" />
-  <Exec Command="C:\Users\buh\.nuget\packages\squirrel.windows\1.9.1\tools\squirrel --releasify $(OutDir)Watcher.$([System.Version]::Parse(%(myAssemblyInfo.Version)).ToString(3)).nupkg" />
-</Target>
+    <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">
+      <Output TaskParameter="Assemblies" ItemName="myAssemblyInfo" />
+    </GetAssemblyIdentity>
+    <Exec Command="C:\Users\buh\.nuget\packages\nuget.commandline\5.3.1\tools\nuget pack Watcher.nuspec -Version %(myAssemblyInfo.Version) -Properties Configuration=Release -OutputDirectory $(OutDir) -BasePath $(OutDir)" />
+    <Exec Command="C:\Users\buh\.nuget\packages\squirrel.windows\1.9.1\tools\squirrel --releasify $(OutDir)Watcher.$([System.Version]::Parse(%(myAssemblyInfo.Version)).ToString(3)).nupkg" />
+  </Target>
 </Project>

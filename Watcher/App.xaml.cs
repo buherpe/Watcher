@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Windows;
 using NLog;
 using Squirrel;
@@ -12,6 +13,8 @@ namespace Watcher
     {
         private static Logger _logger = LogManager.GetCurrentClassLogger();
 
+        private Timer _timer = new Timer(43_200_000);
+
         public App()
         {
             LogManager.Configuration = Helper.DefaultLogConfig()
@@ -21,15 +24,19 @@ namespace Watcher
                 ;
             Exit += App_Exit;
             Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
+            _timer.Elapsed += TimerOnElapsed;
+            _timer.Start();
 
             _logger.HelloWorld();
-#if !DEBUG
             UpdateApp();
-#endif
         }
 
         private async Task UpdateApp()
         {
+#if DEBUG
+            _logger.Info($"DEBUG, skipping update");
+            return;
+#endif
             _logger.Info($"Start");
 
             try
@@ -43,11 +50,11 @@ namespace Watcher
                     if (updateInfo.ReleasesToApply.Any())
                     {
                         _logger.Info($"UpdateApp()");
-                        await mgr.UpdateApp(Progress);
+                        await mgr.UpdateApp(Progress).ConfigureAwait(false);
                         _logger.Info($"UpdateHelper.Updated?.Invoke()");
                         UpdateHelper.Updated?.Invoke();
                     }
-                    
+
                 }
             }
             catch (Exception e)
@@ -56,14 +63,14 @@ namespace Watcher
             }
         }
 
+        private void TimerOnElapsed(object sender, ElapsedEventArgs e)
+        {
+            UpdateApp();
+        }
+
         private void Progress(int obj)
         {
             _logger.Info($"{obj}");
-            //if (obj == 99)
-            //{
-            //    //MessageBox.Show($"Update ready, restart to apply");
-            //    UpdateHelper.Updated?.Invoke();
-            //}
         }
 
         private void Current_DispatcherUnhandledException(object sender,
@@ -79,10 +86,5 @@ namespace Watcher
         {
             _logger.Info($"ApplicationExitCode: {e.ApplicationExitCode}");
         }
-    }
-
-    public static class UpdateHelper
-    {
-        public static Action Updated { get; set; }
     }
 }
