@@ -121,6 +121,8 @@ namespace Watcher
             get => _windowState;
             set
             {
+                if (value == WindowState.Minimized) return;
+
                 if (OnPropertyChanged(ref _windowState, value))
                 {
                     RestartSavingTimer();
