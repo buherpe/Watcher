@@ -101,6 +101,7 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="Path: "/>
                                     <TextBox Grid.Column="1"
@@ -115,6 +116,7 @@
                                             </Binding>
                                         </TextBox.Text>
                                     </TextBox>
+                                    <Button Content="..." Grid.Column="2" Command="{Binding TripledotCommand}"/>
                                 </Grid>
                                 <Grid>
                                     <Grid.ColumnDefinitions>

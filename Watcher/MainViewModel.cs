@@ -141,7 +141,11 @@ namespace Watcher
         public MainViewModel()
         {
             //avoid a "object reference not set to an instance of an object@ exception in XAML code while design time
-            if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
+            if (LicenseManager.UsageMode == LicenseUsageMode.Designtime)
+            {
+                AddWatcher("C:\\");
+                return;
+            }
 
             UpdateHelper.Updated = OnUpdated;
 

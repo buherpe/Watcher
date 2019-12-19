@@ -1,11 +1,9 @@
 ﻿using System;
 using System.ComponentModel;
 using System.IO;
-using System.Runtime.CompilerServices;
-using System.Windows.Input;
+using System.Windows.Forms;
 using Newtonsoft.Json;
 using Tools;
-using Watcher.Annotations;
 
 namespace Watcher
 {
@@ -105,6 +103,21 @@ namespace Watcher
             {
                 OnWatcherDeleted?.Invoke(Id);
                 Dispose();
+            }));
+
+        private RelayCommand _tripledotCommand;
+
+        [JsonIgnore]
+        public RelayCommand TripledotCommand =>
+            _tripledotCommand ??
+            (_tripledotCommand = new RelayCommand(obj =>
+            {
+                var ofd = new FolderBrowserDialog();
+                ofd.SelectedPath = Path;
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    Path = ofd.SelectedPath;
+                }
             }));
 
         public ChangeWatcher(string path = "", string filter = "")
