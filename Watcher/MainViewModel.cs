@@ -22,7 +22,7 @@ namespace Watcher
 {
     public class MainViewModel : ObservableObject, IDisposable
     {
-        private static Logger _logger = LogManager.GetCurrentClassLogger();
+        private static Logger Log = LogManager.GetCurrentClassLogger();
 
         public string AppNameWithVersion => Helper.AppNameWithVersion;
 
@@ -81,7 +81,7 @@ namespace Watcher
             _updatedCommand ??
             (_updatedCommand = new RelayCommand(obj =>
             {
-                _logger.Info($"UpdatedCommand start");
+                Log.Info($"UpdatedCommand start");
                 Process.Start("..\\Watcher.exe");
                 Application.Current.Shutdown(0);
             }));
@@ -147,7 +147,7 @@ namespace Watcher
                 return;
             }
 
-            UpdateHelper.Updated = OnUpdated;
+            Helper.AppUpdated += OnUpdated;
 
 //#if DEBUG
 //            Observable.Timer(DateTimeOffset.Now.AddSeconds(2))
@@ -175,7 +175,7 @@ namespace Watcher
                 .DisposeMany()
                 .Subscribe();
 
-            _logger.Info($"SettingsPath: {SettingsPath}");
+            Log.Info($"SettingsPath: {SettingsPath}");
 
             _savingTimer.Elapsed += (s, e) => { SaveSettings(); };
 
@@ -212,7 +212,7 @@ namespace Watcher
             watcher.Deleted += (watcherId, e) => AddChange(watcherId, ChangeType.Deleted, e.FullPath);
             watcher.OnError += (watcherId, e) =>
             {
-                _logger.Error(e.GetException());
+                Log.Error(e.GetException());
                 AddChange(watcherId, ChangeType.Error, e.GetException().Message);
             };
             watcher.OnWatcherDeleted += watcherId =>
@@ -249,14 +249,14 @@ namespace Watcher
 
         public void RestartSavingTimer()
         {
-            _logger.Info("Restart saving timer");
+            Log.Info("Restart saving timer");
             _savingTimer.Stop();
             _savingTimer.Start();
         }
 
         public void SaveSettings()
         {
-            _logger.Info("Settings saving...");
+            Log.Info("Settings saving...");
             var settings = new Settings();
 
             settings.Watchers = new List<ChangeWatcher>(Watchers);
@@ -274,12 +274,12 @@ namespace Watcher
 
             File.WriteAllText(SettingsPath, settingsJson, Encoding.UTF8);
 
-            _logger.Info("Settings saved");
+            Log.Info("Settings saved");
         }
 
         public void LoadSettings()
         {
-            _logger.Info("Settings loading...");
+            Log.Info("Settings loading...");
             if (File.Exists(SettingsPath))
             {
                 var settingsJson = File.ReadAllText(SettingsPath);
@@ -307,7 +307,7 @@ namespace Watcher
                 //    .Add(new SortDescription("Id", ListSortDirection.Descending));
             }
 
-            _logger.Info("Settings loaded");
+            Log.Info("Settings loaded");
         }
 
         public void Dispose()
