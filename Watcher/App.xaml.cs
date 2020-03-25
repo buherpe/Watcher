@@ -6,8 +6,8 @@ namespace Watcher
 {
     public partial class App
     {
-        private static Logger Log = LogManager.GetCurrentClassLogger();
-
+        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+        
         public App()
         {
             Helper.MagickInitMethod($"http://buherpet.tk:9999/updates/{Helper.AppName}");
@@ -16,12 +16,10 @@ namespace Watcher
             Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
         }
 
-        private void Current_DispatcherUnhandledException(object sender,
-            System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        private void Current_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
             Log.Error(e.Exception);
-            MessageBox.Show($"{e.Exception.Message}\r\n\r\n\r\n{e.Exception}", $"Error :: {Helper.AppNameWithVersion}",
-                MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"{e.Exception.Message}\r\n\r\n\r\n{e.Exception}", $"Error :: {Helper.AppNameWithVersion}", MessageBoxButton.OK, MessageBoxImage.Error);
             e.Handled = true;
         }
 

@@ -48,9 +48,9 @@ namespace Watcher
             _closingCommand ??
             (_closingCommand = new RelayCommand(obj =>
             {
-                if (_savingTimer.Enabled)
+                if (Settings.SavingTimer.Enabled)
                 {
-                    _savingTimer.Enabled = false;
+                    Settings.SavingTimer.Enabled = false;
                     SaveSettings();
                 }
             }));
@@ -86,15 +86,10 @@ namespace Watcher
                 Application.Current.Shutdown(0);
             }));
 
-        private Timer _savingTimer = new Timer(5_000)
-        {
-            AutoReset = false,
-            Enabled = false,
-        };
-
-        public string SettingsPath { get; } =
-            $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}\\{Helper.AppName}\\Settings.json";
+        //public string SettingsPath { get; } = $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}\\{Helper.AppName}\\Settings.json";
         //public string SettingsPath { get; } = $"..\\Settings.json";
+
+        public ThisSettings Settings { get; } = new ThisSettings();
 
         public SourceCache<Change, int> ChangeCache { get; set; } = new SourceCache<Change, int>(x => x.Id);
 
@@ -125,7 +120,7 @@ namespace Watcher
 
                 if (OnPropertyChanged(ref _windowState, value))
                 {
-                    RestartSavingTimer();
+                    Settings.RestartSavingTimer();
                 }
             }
         }
@@ -175,9 +170,9 @@ namespace Watcher
                 .DisposeMany()
                 .Subscribe();
 
-            Log.Info($"SettingsPath: {SettingsPath}");
+            Log.Info($"SettingsPath: {Helper.SettingsPath}");
 
-            _savingTimer.Elapsed += (s, e) => { SaveSettings(); };
+            Settings.SavingTimer.Elapsed += (s, e) => { SaveSettings(); };
 
             LoadSettings();
         }
@@ -218,7 +213,7 @@ namespace Watcher
             watcher.OnWatcherDeleted += watcherId =>
             {
                 Watchers.Remove(Watchers.FirstOrDefault(x => x.Id == watcherId));
-                RestartSavingTimer();
+                Settings.RestartSavingTimer();
             };
             watcher.Id = _watchersCounter++;
             watcher.IncludeSubdirectories = includeSubdirectories;
@@ -231,7 +226,7 @@ namespace Watcher
 
         private void WatcherOnPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            RestartSavingTimer();
+            Settings.RestartSavingTimer();
         }
 
         public void AddChange(int watcherId, ChangeType changeType, string fullPath, string oldFullPath = "")
@@ -247,32 +242,16 @@ namespace Watcher
             });
         }
 
-        public void RestartSavingTimer()
-        {
-            Log.Info("Restart saving timer");
-            _savingTimer.Stop();
-            _savingTimer.Start();
-        }
-
         public void SaveSettings()
         {
             Log.Info("Settings saving...");
-            var settings = new Settings();
+            //var settings = new ThisSettings();
 
-            settings.Watchers = new List<ChangeWatcher>(Watchers);
+            Settings.Watchers = new List<ChangeWatcher>(Watchers);
             //settings.SortingChanges = CollectionViewSource.GetDefaultView(Changes).SortDescriptions;
-            settings.WindowState = WindowState;
+            Settings.WindowState = WindowState;
 
-            var settingsJson = JsonConvert.SerializeObject(settings, Formatting.Indented);
-
-            var settingsFolder = new DirectoryInfo(SettingsPath).Parent;
-
-            if (!settingsFolder.Exists)
-            {
-                settingsFolder.Create();
-            }
-
-            File.WriteAllText(SettingsPath, settingsJson, Encoding.UTF8);
+            Settings.Save();
 
             Log.Info("Settings saved");
         }
@@ -280,11 +259,11 @@ namespace Watcher
         public void LoadSettings()
         {
             Log.Info("Settings loading...");
-            if (File.Exists(SettingsPath))
-            {
-                var settingsJson = File.ReadAllText(SettingsPath);
-                var settings = JsonConvert.DeserializeObject<Settings>(settingsJson);
 
+            var settings = Settings.Load();
+
+            if (settings != null)
+            {
                 if (settings.Watchers?.Any() ?? false)
                     foreach (var watcher in settings.Watchers)
                     {
@@ -312,7 +291,7 @@ namespace Watcher
 
         public void Dispose()
         {
-            _savingTimer?.Dispose();
+            //Settings.SavingTimer?.Dispose();
             _cleanUp.Dispose();
         }
     }

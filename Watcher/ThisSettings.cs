@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
-using System.ComponentModel;
 using System.Windows;
+using Tools;
 
 namespace Watcher
 {
-    public class Settings
+    public class ThisSettings : Settings<ThisSettings>
     {
         public List<ChangeWatcher> Watchers { get; set; }
         //public SortDescriptionCollection SortingChanges { get; set; }
